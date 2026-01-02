@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Notifications</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<audio id="notifySound" preload="auto">
+    <source src="/static/sounds/notification.mp3" type="audio/mpeg">
+</audio>
+<script>
+let soundUnlocked = false;
+
+document.addEventListener("click", () => {
+    if (!soundUnlocked) {
+        const audio = document.getElementById("notifySound");
+        audio.play().then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+            soundUnlocked = true;
+            console.log("🔓 Sound unlocked");
+        }).catch(() => {});
+    }
+}, { once: true });
+</script>
+
+<script>
+let lastUnreadCount = 0;
+
+async function checkNotifications() {
+    try {
+        const res = await fetch("/admin/notifications/unread-count");
+        const data = await res.json();
+
+        if (data.count > lastUnreadCount) {
+            const audio = document.getElementById("notifySound");
+            audio.play().catch(err => {
+                console.log("Sound blocked:", err);
+            });
+        }
+
+        lastUnreadCount = data.count;
+    } catch (e) {
+        console.log("Polling error", e);
+    }
+}
+
+setInterval(checkNotifications, 5000);
+</script>
+
+
+
+<header>
+    <h1>🔔 Admin Notifications</h1>
+</header>
+
+<section class="container">
+
+    {% if notifications %}
+        <ul>
+            {% for n in notifications %}
+                <li style="margin-bottom:10px;">
+                    <strong>{{ n.message }}</strong><br>
+                    <small>{{ n.created_at }}</small>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No notifications</p>
+    {% endif %}
+
+</section>
+
+</body>
+</html>
